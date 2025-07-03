@@ -1,0 +1,339 @@
+{
+    "info": {
+        "_postman_id": "f220a70a-3292-4d24-85c3-8288fb71f4a8",
+        "name": "Vacations Project - API Proof of Concept",
+        "description": "The 9 definitive API endpoints for the Vacations project, generated for proof-of-concept demonstration.",
+        "schema": "https://schema.postman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Authentication",
+            "description": "Endpoints for user registration and login.",
+            "item": [
+                {
+                    "name": "1. Register a User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/auth/register",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Create a new user account.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"first_name\": \"Test\",\n    \"last_name\": \"User\",\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "2. Login User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/auth/login",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Authenticate a user and receive a token.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password123\"\n}"
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Vacation Management",
+            "description": "Endpoints for CRUD operations on vacations. (Admin-only for CUD)",
+            "item": [
+                {
+                    "name": "3. Get All Vacations",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseURL}}/api/vacations",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "vacations"
+                            ]
+                        },
+                        "description": "Retrieve a list of all vacation entries."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "4. Get Vacation by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseURL}}/api/vacations/{vacation_id}",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "vacations",
+                                "{vacation_id}"
+                            ]
+                        },
+                        "description": "Retrieve details for a single vacation using its ID."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "5. Add New Vacation",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/vacations",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "vacations"
+                            ]
+                        },
+                        "description": "Create a new vacation entry. (Requires Admin privileges)",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"country_id\": 1,\n    \"description\": \"A beautiful trip to the mountains.\",\n    \"start_date\": \"2024-10-01\",\n    \"end_date\": \"2024-10-10\",\n    \"price\": 1999.99,\n    \"image_file_name\": \"mountains.jpg\"\n}"
+                        }
+                    },
+                    "response": [],
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "",
+                                    "                if (pm.response.code === 201) {",
+                                    "                    var jsonData = pm.response.json();",
+                                    "                    if (jsonData && jsonData.vacation_id) {",
+                                    "                        pm.collectionVariables.set(\"vacation_id\", jsonData.vacation_id);",
+                                    "                    }",
+                                    "                }",
+                                    "            "
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "6. Update Existing Vacation",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/vacations/{vacation_id}",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "vacations",
+                                "{vacation_id}"
+                            ]
+                        },
+                        "description": "Modify an existing vacation entry. (Requires Admin privileges)",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"country_id\": 1,\n    \"description\": \"UPDATED: An even more beautiful trip to the mountains.\",\n    \"start_date\": \"2024-10-01\",\n    \"end_date\": \"2024-10-12\",\n    \"price\": 2150.0,\n    \"image_file_name\": \"mountains_updated.jpg\"\n}"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "7. Delete Vacation",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseURL}}/api/vacations/{vacation_id}",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "vacations",
+                                "{vacation_id}"
+                            ]
+                        },
+                        "description": "Remove a vacation entry. (Requires Admin privileges)"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Like Functionality",
+            "description": "Endpoints for users to like and unlike vacations.",
+            "item": [
+                {
+                    "name": "8. Like a Vacation",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/likes",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "likes"
+                            ]
+                        },
+                        "description": "Record a user's 'like' for a specific vacation. Both user_id and vacation_id are required in the body.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"user_id\": \"{{user_id}}\",\n    \"vacation_id\": \"{{vacation_id}}\"\n}"
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "9. Unlike a Vacation",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseURL}}/api/likes",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "likes"
+                            ]
+                        },
+                        "description": "Remove a user's 'like' from a specific vacation. The user_id and vacation_id must be in the JSON body.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"user_id\": \"{{user_id}}\",\n    \"vacation_id\": \"{{vacation_id}}\"\n}"
+                        }
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseURL",
+            "value": "http://127.0.0.1:5001",
+            "type": "string",
+            "description": "The base URL for your API server."
+        },
+        {
+            "key": "vacation_id",
+            "value": "1",
+            "type": "string",
+            "description": "An example ID for a vacation. Can be updated by tests."
+        },
+        {
+            "key": "user_id",
+            "value": "1",
+            "type": "string",
+            "description": "An example ID for a user."
+        }
+    ]
+}
