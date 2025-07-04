@@ -31,3 +31,8 @@ def delete_like_logic(data):
 def get_liked_vacations_logic(user_id):
     liked_vacations = like_model.get_liked_vacations_by_user(user_id)
     return liked_vacations, 200
+
+
+def get_all_liked_vacations_report_logic():
+    report = like_model.get_all_liked_vacations_report()
+    return report, 200

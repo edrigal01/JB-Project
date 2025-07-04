@@ -4,6 +4,7 @@ from api.likes import controller as like_controller
 
 likes_blueprint = Blueprint("likes", __name__)
 
+
 @likes_blueprint.route("/", methods=["POST"])
 def add_like():
     data = request.get_json()
@@ -15,6 +16,12 @@ def add_like():
 def delete_like():
     data = request.get_json()
     response, status_code = like_controller.delete_like_logic(data)
+    return jsonify(response), status_code
+
+
+@likes_blueprint.route("/report", methods=["GET"])
+def get_all_liked_vacations_report():
+    response, status_code = like_controller.get_all_liked_vacations_report_logic()
     return jsonify(response), status_code
 
 

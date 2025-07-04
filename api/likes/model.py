@@ -39,3 +39,22 @@ def get_liked_vacations_by_user(user_id):
         (user_id,),
     ).fetchall()
     return [dict(row) for row in liked_vacations]
+
+
+def get_all_liked_vacations_report():
+    db = get_db()
+    report = db.execute(
+        """
+        SELECT
+            v.vacation_id,
+            v.description,
+            c.country_name,
+            COUNT(l.user_id) as like_count
+        FROM vacations v
+        JOIN likes l ON v.vacation_id = l.vacation_id
+        JOIN countries c ON v.country_id = c.country_id
+        GROUP BY v.vacation_id
+        ORDER BY like_count DESC
+        """
+    ).fetchall()
+    return [dict(row) for row in report]

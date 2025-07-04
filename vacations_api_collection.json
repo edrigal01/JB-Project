@@ -1,8 +1,8 @@
 {
     "info": {
-        "_postman_id": "f220a70a-3292-4d24-85c3-8288fb71f4a8",
-        "name": "Vacations Project - API Proof of Concept",
-        "description": "The 9 definitive API endpoints for the Vacations project, generated for proof-of-concept demonstration.",
+        "_postman_id": "9829dec8-b2b8-4670-a38f-be04bc221a36",
+        "name": "Vacations Project API",
+        "description": "The complete API collection for the Vacations project.",
         "schema": "https://schema.postman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
@@ -21,7 +21,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseURL}}/auth/register",
+                            "raw": "{{baseURL}}/api/auth/register",
                             "protocol": "http",
                             "host": [
                                 "127",
@@ -31,6 +31,7 @@
                             ],
                             "port": "5001",
                             "path": [
+                                "api",
                                 "auth",
                                 "register"
                             ]
@@ -54,7 +55,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{baseURL}}/auth/login",
+                            "raw": "{{baseURL}}/api/auth/login",
                             "protocol": "http",
                             "host": [
                                 "127",
@@ -64,6 +65,7 @@
                             ],
                             "port": "5001",
                             "path": [
+                                "api",
                                 "auth",
                                 "login"
                             ]
@@ -80,7 +82,7 @@
         },
         {
             "name": "Vacation Management",
-            "description": "Endpoints for CRUD operations on vacations. (Admin-only for CUD)",
+            "description": "Endpoints for CRUD operations on vacations.",
             "item": [
                 {
                     "name": "3. Get All Vacations",
@@ -132,7 +134,7 @@
                     "response": []
                 },
                 {
-                    "name": "5. Add New Vacation",
+                    "name": "5. Add New Vacation (Admin)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -159,7 +161,7 @@
                         "description": "Create a new vacation entry. (Requires Admin privileges)",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"country_id\": 1,\n    \"description\": \"A beautiful trip to the mountains.\",\n    \"start_date\": \"2024-10-01\",\n    \"end_date\": \"2024-10-10\",\n    \"price\": 1999.99,\n    \"image_file_name\": \"mountains.jpg\"\n}"
+                            "raw": "{\n    \"country_id\": 1,\n    \"description\": \"A beautiful trip to the mountains.\",\n    \"start_date\": \"2025-10-01\",\n    \"end_date\": \"2025-10-10\",\n    \"price\": 1999.99,\n    \"image_file_name\": \"mountains.jpg\"\n}"
                         }
                     },
                     "response": [],
@@ -183,7 +185,7 @@
                     ]
                 },
                 {
-                    "name": "6. Update Existing Vacation",
+                    "name": "6. Update Existing Vacation (Admin)",
                     "request": {
                         "method": "PUT",
                         "header": [
@@ -211,13 +213,13 @@
                         "description": "Modify an existing vacation entry. (Requires Admin privileges)",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"country_id\": 1,\n    \"description\": \"UPDATED: An even more beautiful trip to the mountains.\",\n    \"start_date\": \"2024-10-01\",\n    \"end_date\": \"2024-10-12\",\n    \"price\": 2150.0,\n    \"image_file_name\": \"mountains_updated.jpg\"\n}"
+                            "raw": "{\n    \"country_id\": 1,\n    \"description\": \"UPDATED: An even more beautiful trip to the mountains.\",\n    \"start_date\": \"2025-10-01\",\n    \"end_date\": \"2025-10-12\",\n    \"price\": 2150.0,\n    \"image_file_name\": \"mountains_updated.jpg\"\n}"
                         }
                     },
                     "response": []
                 },
                 {
-                    "name": "7. Delete Vacation",
+                    "name": "7. Delete Vacation (Admin)",
                     "request": {
                         "method": "DELETE",
                         "header": [],
@@ -245,7 +247,7 @@
         },
         {
             "name": "Like Functionality",
-            "description": "Endpoints for users to like and unlike vacations.",
+            "description": "Endpoints for users to like, unlike, and view liked vacations.",
             "item": [
                 {
                     "name": "8. Like a Vacation",
@@ -272,7 +274,7 @@
                                 "likes"
                             ]
                         },
-                        "description": "Record a user's 'like' for a specific vacation. Both user_id and vacation_id are required in the body.",
+                        "description": "Record a user's 'like' for a specific vacation.",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n    \"user_id\": \"{{user_id}}\",\n    \"vacation_id\": \"{{vacation_id}}\"\n}"
@@ -305,11 +307,61 @@
                                 "likes"
                             ]
                         },
-                        "description": "Remove a user's 'like' from a specific vacation. The user_id and vacation_id must be in the JSON body.",
+                        "description": "Remove a user's 'like' from a specific vacation.",
                         "body": {
                             "mode": "raw",
                             "raw": "{\n    \"user_id\": \"{{user_id}}\",\n    \"vacation_id\": \"{{vacation_id}}\"\n}"
                         }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "10. Get Liked Vacations by User",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseURL}}/api/likes/{user_id}",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "likes",
+                                "{user_id}"
+                            ]
+                        },
+                        "description": "Retrieve all vacations liked by a specific user."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "11. Get Likes Report (Admin)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseURL}}/api/likes/report",
+                            "protocol": "http",
+                            "host": [
+                                "127",
+                                "0",
+                                "0",
+                                "1"
+                            ],
+                            "port": "5001",
+                            "path": [
+                                "api",
+                                "likes",
+                                "report"
+                            ]
+                        },
+                        "description": "Retrieve a report of all liked vacations and their like counts. (Admin-only)"
                     },
                     "response": []
                 }
@@ -331,9 +383,9 @@
         },
         {
             "key": "user_id",
-            "value": "1",
+            "value": "2",
             "type": "string",
-            "description": "An example ID for a user."
+            "description": "An example ID for a user. Default is a regular user."
         }
     ]
 }
