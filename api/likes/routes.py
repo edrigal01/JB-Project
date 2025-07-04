@@ -4,7 +4,6 @@ from api.likes import controller as like_controller
 
 likes_blueprint = Blueprint("likes", __name__)
 
-
 @likes_blueprint.route("/", methods=["POST"])
 def add_like():
     data = request.get_json()
