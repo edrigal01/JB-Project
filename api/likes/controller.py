@@ -1,3 +1,4 @@
+# api/likes/controller.py
 from api.likes import model as like_model
 
 
@@ -25,3 +26,8 @@ def delete_like_logic(data):
         return {"message": "Like removed successfully."}, 204
     else:
         return {"error": "Like not found."}, 404
+
+
+def get_liked_vacations_logic(user_id):
+    liked_vacations = like_model.get_liked_vacations_by_user(user_id)
+    return liked_vacations, 200
