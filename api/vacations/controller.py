@@ -68,6 +68,7 @@ def update_vacation_logic(vacation_id, data):
 
 def delete_vacation_logic(vacation_id):
     if vacation_model.delete_vacation(vacation_id):
-        return {"message": "Vacation deleted successfully."}, 204
+        # CHANGE: Use 200 OK instead of 204 No Content.
+        return {"message": "Vacation deleted successfully."}, 200
     else:
         return {"error": "Vacation not found."}, 404

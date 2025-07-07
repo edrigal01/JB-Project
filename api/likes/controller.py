@@ -23,7 +23,8 @@ def delete_like_logic(data):
         return {"error": "user_id and vacation_id are required."}, 400
 
     if like_model.delete_like(user_id, vacation_id):
-        return {"message": "Like removed successfully."}, 204
+        # CHANGE: Use 200 OK instead of 204 No Content to allow a response body.
+        return {"message": "Like removed successfully."}, 200
     else:
         return {"error": "Like not found."}, 404
 
