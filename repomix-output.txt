@@ -1,0 +1,1226 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+================================================================
+File Summary
+================================================================
+
+Purpose:
+--------
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+
+File Format:
+------------
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  a. A separator line (================)
+  b. The file path (File: path/to/file)
+  c. Another separator line
+  d. The full contents of the file
+  e. A blank line
+
+Usage Guidelines:
+-----------------
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+
+Notes:
+------
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: api, api/likes, api/likes/controller.py, api/likes/model.py, api/likes/routes.py, api/users, api/users/controller.py, api/users/model.py, api/users/routes.py, api/vacations, api/vacations/controller.py, api/vacations/model.py, api/vacations/routes.py, project, project/.gitattributes, project/db.py, scripts, scripts/database_setup.py, tests, tests/generate_postman_collection.py, tests/run_verbose_api_tests.py, app.py, requirements.txt
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+
+
+================================================================
+Directory Structure
+================================================================
+api/likes/__init__.py
+api/likes/controller.py
+api/likes/model.py
+api/likes/routes.py
+api/users/__init__.py
+api/users/controller.py
+api/users/model.py
+api/users/routes.py
+api/vacations/__init__.py
+api/vacations/controller.py
+api/vacations/model.py
+api/vacations/routes.py
+app.py
+project/__init__.py
+project/.gitattributes
+project/db.py
+scripts/database_setup.py
+tests/__init__.py
+tests/generate_postman_collection.py
+tests/run_verbose_api_tests.py
+
+================================================================
+Files
+================================================================
+
+================
+File: app.py
+================
+from flask import Flask
+from flask_cors import CORS
+
+# --- NEW IMPORT ---
+from project import db
+
+# Import the blueprints
+from api.users.routes import users_blueprint
+from api.vacations.routes import vacations_blueprint
+from api.likes.routes import likes_blueprint
+
+# Create the Flask application instance
+app = Flask(__name__)
+CORS(app)
+
+# --- NEW SETUP ---
+# Initialize the database connection handling functions with the app
+db.init_app(app)
+
+# Register the blueprints, defining the URL prefix for each feature
+app.register_blueprint(users_blueprint, url_prefix='/api/auth')
+app.register_blueprint(vacations_blueprint, url_prefix='/api/vacations')
+app.register_blueprint(likes_blueprint, url_prefix='/api/likes')
+
+# The main entry point to run the app
+if __name__ == '__main__':
+    app.run(debug=True, port=5001)
+
+================
+File: project/__init__.py
+================
+# project/__init__.py
+
+# This file makes the 'project' directory a Python package,
+# allowing us to import modules from it, like 'db.py'.
+
+================
+File: project/.gitattributes
+================
+# Auto detect text files and perform LF normalization
+* text=auto
+
+================
+File: project/db.py
+================
+import sqlite3
+from flask import g as myDB
+
+DB_FILE = "database.db"
+
+
+def get_db():
+    """
+    Opens a new database connection if there is none yet for the
+    current application context.
+    """
+    if "db" not in myDB:
+        myDB.db = sqlite3.connect(DB_FILE, timeout=15)
+        myDB.db.row_factory = sqlite3.Row
+        myDB.db.execute("PRAGMA foreign_keys = ON")
+    return myDB.db
+
+
+def close_db(e=None):
+    """Closes the database again at the end of the request."""
+    db = myDB.pop("db", None)
+    if db is not None:
+        db.close()
+
+
+def init_app(app):
+    """Register database functions with the Flask app."""
+    app.teardown_appcontext(close_db)
+
+================
+File: scripts/database_setup.py
+================
+import sqlite3
+import os
+
+DB_FILE = "database.db"
+
+# Remove the old database file if it exists to start fresh
+if os.path.exists(DB_FILE):
+    os.remove(DB_FILE)
+    print("Old database removed.")
+
+# Connect to the SQLite database
+conn = sqlite3.connect(DB_FILE)
+cursor = conn.cursor()
+
+# Enable foreign key support, which is crucial for data integrity
+cursor.execute("PRAGMA foreign_keys = ON;")
+
+# --- Table Creation ---
+
+# 1. roles table
+cursor.execute(
+    """
+CREATE TABLE roles (
+    role_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    role_name TEXT NOT NULL UNIQUE
+)
+"""
+)
+
+# 2. users table
+cursor.execute(
+    """
+CREATE TABLE users (
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    role_id INTEGER,
+    FOREIGN KEY(role_id) REFERENCES roles(role_id)
+)
+"""
+)
+
+# 3. countries table
+cursor.execute(
+    """
+CREATE TABLE countries (
+    country_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    country_name TEXT NOT NULL UNIQUE
+)
+"""
+)
+
+# 4. vacations table
+cursor.execute(
+    """
+CREATE TABLE vacations (
+    vacation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    country_id INTEGER,
+    description TEXT NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL,
+    price REAL NOT NULL,
+    image_file_name TEXT,
+    FOREIGN KEY(country_id) REFERENCES countries(country_id)
+)
+"""
+)
+
+# 5. likes table (join table for many-to-many relationship between users and vacations)
+cursor.execute(
+    """
+CREATE TABLE likes (
+    user_id INTEGER,
+    vacation_id INTEGER,
+    PRIMARY KEY (user_id, vacation_id),
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (vacation_id) REFERENCES vacations(vacation_id) ON DELETE CASCADE
+)
+"""
+)
+
+# --- Data Insertion ---
+
+# Insert roles
+cursor.execute("INSERT INTO roles (role_name) VALUES ('Admin')")
+cursor.execute("INSERT INTO roles (role_name) VALUES ('User')")
+
+# Insert users
+cursor.execute(
+    "INSERT INTO users (first_name, last_name, email, password, role_id) VALUES ('Admin', 'Admin', 'admin@vacations.com', 'admin123', 1)"
+)
+cursor.execute(
+    "INSERT INTO users (first_name, last_name, email, password, role_id) VALUES ('John', 'Doe', 'john.doe@email.com', 'user1234', 2)"
+)
+cursor.execute(
+    "INSERT INTO users (first_name, last_name, email, password, role_id) VALUES ('Jane', 'Smith', 'jane.smith@email.com', 'pass5678', 2)"
+)
+
+# Insert countries
+countries = [
+    ("USA",),
+    ("Spain",),
+    ("Italy",),
+    ("Greece",),
+    ("Thailand",),
+    ("Japan",),
+    ("France",),
+    ("Australia",),
+    ("Brazil",),
+    ("Canada",),
+]
+cursor.executemany("INSERT INTO countries (country_name) VALUES (?)", countries)
+
+# Insert vacations with country_id values
+vacations = [
+    (1, "Sunny beach vacation in Miami", "2025-07-10", "2025-07-20", 2500, "miami.jpg"),
+    (2, "Explore the history of Barcelona", "2025-08-01", "2025-08-10", 1800, "barcelona.jpg"),
+    (3, "Romantic getaway in Rome", "2025-09-05", "2025-09-12", 3000, "rome.jpg"),
+    (4, "Island hopping in the Greek isles", "2025-06-15", "2025-06-25", 4500, "greece.jpg"),
+    (5, "Adventure in Bangkok", "2025-11-20", "2025-11-30", 2200, "bangkok.jpg"),
+    (6, "Cultural tour of Kyoto", "2026-04-10", "2026-04-20", 5000, "kyoto.jpg"),
+    (7, "Visit the Eiffel Tower in Paris", "2025-10-01", "2025-10-07", 2800, "paris.jpg"),
+    (8, "Outback adventure in Sydney", "2026-01-15", "2026-01-25", 6000, "sydney.jpg"),
+    (9, "Carnival in Rio de Janeiro", "2026-02-20", "2026-02-28", 3500, "rio.jpg"),
+    (10, "Skiing in the Canadian Rockies", "2025-12-10", "2025-12-18", 4000, "canada.jpg"),
+    (1, "New York City sightseeing", "2025-05-20", "2025-05-27", 3200, "nyc.jpg"),
+    (2, "Andalusian tour in Seville", "2025-09-15", "2025-09-22", 1900, "seville.jpg"),
+]
+
+cursor.executemany(
+    "INSERT INTO vacations (country_id, description, start_date, end_date, price, image_file_name) VALUES (?, ?, ?, ?, ?, ?)",
+    vacations,
+)
+
+# Commit the changes and close the connection
+conn.commit()
+conn.close()
+
+print("Database setup complete.")
+
+================
+File: tests/__init__.py
+================
+# project/__init__.py
+
+# This file makes the 'project' directory a Python package,
+# allowing us to import modules from it, like 'db.py'.
+
+================
+File: tests/run_verbose_api_tests.py
+================
+# run_verbose_api_tests.py
+# A script that runs and VISUALLY DEMONSTRATES API tests for the Vacations project.
+
+import requests
+import json
+import time
+from datetime import datetime, timedelta
+
+# --- Configuration ---
+BASE_URL = "http://127.0.0.1:5001/api"
+DEFAULT_TIMEOUT = 10  # Seconds to wait for a response
+
+# --- Central Request Function for Visibility ---
+def make_request(method, url, json_payload=None):
+    """
+    Prints the details of the request, makes the request, and returns the response.
+    This is the core function for showing what's happening.
+    """
+    # Announce the action
+    endpoint = url.replace(BASE_URL, '') # Show a clean endpoint path
+    print(f"\n▶️  Action: {method.upper()} request to endpoint '{endpoint}'")
+
+    # If there's data, print it so the teacher can see what's being sent
+    if json_payload:
+        print("   Payload Sent:")
+        # Use json.dumps for pretty printing the dictionary
+        print(json.dumps(json_payload, indent=4))
+
+    try:
+        # Make the actual HTTP request
+        response = requests.request(
+            method,
+            url,
+            json=json_payload,
+            timeout=DEFAULT_TIMEOUT
+        )
+        return response
+    except requests.exceptions.RequestException as e:
+        # Handle cases where the server is not running or there's a network error
+        print(f"‼️  CRITICAL NETWORK ERROR: Could not connect to the server.")
+        print(f"    Details: {e}")
+        # Return a mock response object to prevent the script from crashing
+        class MockResponse:
+            status_code = 503
+            text = f"Network Error: {e}"
+            def json(self): return {"error": "Network request failed", "details": str(e)}
+        return MockResponse()
+
+
+# --- Helper Function for Printing Test Results ---
+def print_test_result(validation_name, success, response=None, expected_status=None):
+    """
+    Prints a formatted result for a single validation check.
+    """
+    status_icon = "✅ PASS" if success else "❌ FAIL"
+    print(f"\n   └── {status_icon} - Validation: {validation_name}")
+    if not success and response is not None:
+        print(f"       - Expected Status: {expected_status}, Got: {response.status_code}")
+        try:
+            print(f"       - Response Body:   {response.json()}")
+        except json.JSONDecodeError:
+            print(f"       - Response Text:   {response.text}")
+    print("-" * 60)
+    return success
+
+# --- Main Test Execution Function ---
+def run_api_scenarios():
+    """
+    Executes a series of API test scenarios in a logical, narrative order.
+    """
+    print("\n🚀🚀🚀 Starting API Demonstration Script 🚀🚀🚀")
+    
+    # Store IDs created during the test run to use in later steps
+    created_ids = {}
+
+    # =================================================================
+    # --- SCENARIO 1: A REGULAR USER'S JOURNEY ---
+    # =================================================================
+    print("\n\n--- SCENARIO 1: A REGULAR USER'S JOURNEY ---")
+
+    # 1.1: Register a brand new user
+    new_user_email = f"testuser_{int(time.time())}@example.com"
+    reg_payload = {
+        "first_name": "Test", "last_name": "User",
+        "email": new_user_email, "password": "strongpassword123"
+    }
+    response = make_request("post", f"{BASE_URL}/auth/register", json_payload=reg_payload)
+    if print_test_result("New user is created successfully", response.status_code == 201, response, 201):
+        created_ids['new_user_id'] = response.json().get('user_id')
+
+    # 1.2: Log in as the newly created user
+    login_payload = {"email": new_user_email, "password": "strongpassword123"}
+    response = make_request("post", f"{BASE_URL}/auth/login", json_payload=login_payload)
+    print_test_result(f"User can log in with correct credentials", response.status_code == 200, response, 200)
+
+    # 1.3: View all vacations
+    response = make_request("get", f"{BASE_URL}/vacations/")
+    is_list = isinstance(response.json(), list) if response.ok else False
+    print_test_result("User can retrieve a list of all vacations", response.status_code == 200 and is_list, response, 200)
+
+    # =================================================================
+    # --- SCENARIO 2: ADMIN CONTENT MANAGEMENT ---
+    # =================================================================
+    print("\n\n--- SCENARIO 2: ADMIN CONTENT MANAGEMENT ---")
+
+    # 2.1: Log in as Admin
+    admin_login_payload = {"email": "admin@vacations.com", "password": "admin123"}
+    response = make_request("post", f"{BASE_URL}/auth/login", json_payload=admin_login_payload)
+    print_test_result("Admin can log in successfully", response.status_code == 200, response, 200)
+
+    # 2.2: Add a new vacation
+    start_date = (datetime.now() + timedelta(days=90)).strftime('%Y-%m-%d')
+    end_date = (datetime.now() + timedelta(days=100)).strftime('%Y-%m-%d')
+    vacation_payload = {
+        "country_id": 5, "description": "A new automated test vacation to Phuket",
+        "start_date": start_date, "end_date": end_date,
+        "price": 3550.50, "image_file_name": "phuket_test.jpg"
+    }
+    response = make_request("post", f"{BASE_URL}/vacations/", json_payload=vacation_payload)
+    if print_test_result("Admin can add a new vacation", response.status_code == 201, response, 201):
+        created_ids['new_vacation_id'] = response.json().get('vacation_id')
+    
+    # This block only runs if the vacation was created successfully
+    if 'new_vacation_id' in created_ids:
+        vac_id = created_ids['new_vacation_id']
+        
+        # 2.3: Update the vacation that was just created
+        update_payload = vacation_payload.copy()
+        update_payload['price'] = 3700.00
+        update_payload['description'] = "UPDATED: A fantastic test vacation to Phuket"
+        
+        response = make_request("put", f"{BASE_URL}/vacations/{vac_id}", json_payload=update_payload)
+        price_is_updated = response.json().get('price') == 3700.00 if response.ok else False
+        print_test_result(f"Admin can update the vacation (ID: {vac_id})", response.status_code == 200 and price_is_updated, response, 200)
+        
+        # 2.4: Delete the vacation
+        response = make_request("delete", f"{BASE_URL}/vacations/{vac_id}")
+        print_test_result(f"Admin can delete the vacation (ID: {vac_id})", response.status_code == 204, response, 204)
+
+        # 2.5: Verify the vacation is truly gone by trying to get it again
+        response = make_request("get", f"{BASE_URL}/vacations/{vac_id}")
+        print_test_result(f"Verify vacation (ID: {vac_id}) is deleted", response.status_code == 404, response, 404)
+    else:
+        print("\n S K I P P I N G  - Update/Delete tests skipped because new vacation creation failed.")
+
+    print("\n\n🏁🏁🏁 All scenarios completed. 🏁🏁🏁")
+
+# --- Main Execution Block ---
+if __name__ == "__main__":
+    # A small delay to ensure the Flask server is ready to accept connections
+    print("Waiting 1.5 seconds for server to be ready...")
+    time.sleep(1.5)
+    
+    # Run all the test scenarios
+    run_api_scenarios()
+
+================
+File: api/likes/__init__.py
+================
+# api/likes/__init__.py
+# This file makes the directory a Python package.
+
+================
+File: api/users/__init__.py
+================
+# api/users/__init__.py
+# This file makes the directory a Python package.
+
+================
+File: api/users/controller.py
+================
+# api/users/controller.py
+from api.users import model as user_model
+
+
+def is_valid_email(email):
+    return "@" in email and "." in email
+
+
+def register_user_logic(data):
+    first_name = data.get("first_name")
+    last_name = data.get("last_name")
+    email = data.get("email")
+    password = data.get("password")
+
+    if not all([first_name, last_name, email, password]):
+        return {"error": "All fields are required."}, 400
+    if not is_valid_email(email):
+        return {"error": "Invalid email format."}, 400
+    if len(password) < 4:
+        return {"error": "Password must be at least 4 characters long."}, 400
+    if user_model.check_email_exists(email):
+        return {"error": "Email already registered."}, 409
+
+    new_user = user_model.add_user(first_name, last_name, email, password)
+    return new_user, 201
+
+
+def login_user_logic(data):
+    email = data.get("email")
+    password = data.get("password")
+
+    if not all([email, password]):
+        return {"error": "Email and password are required."}, 400
+
+    user = user_model.get_user_by_credentials(email, password)
+    if not user:
+        return {"error": "Invalid email or password."}, 401
+
+    return user, 200
+
+================
+File: api/users/model.py
+================
+# api\users\model.py
+from project.db import get_db
+
+
+def add_user(first_name, last_name, email, password):
+    db = get_db()
+    # By default, new users get role_id 2 (User)
+    db.execute(
+        "INSERT INTO users (first_name, last_name, email, password, role_id) VALUES (?, ?, ?, ?, 2)",
+        (first_name, last_name, email, password),
+    )
+    db.commit()
+    user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    return dict(user) if user else None
+
+
+def get_user_by_credentials(email, password):
+    db = get_db()
+    # Return user details but omit the password for security
+    user = db.execute(
+        "SELECT user_id, first_name, last_name, email, role_id FROM users WHERE email = ? AND password = ?",
+        (email, password),
+    ).fetchone()
+    return dict(user) if user else None
+
+
+def check_email_exists(email):
+    db = get_db()
+    user = db.execute("SELECT user_id FROM users WHERE email = ?", (email,)).fetchone()
+    return user is not None
+
+================
+File: api/users/routes.py
+================
+# api\users\routes.py
+from flask import Blueprint, request, jsonify
+from api.users import controller as user_controller
+
+users_blueprint = Blueprint("users", __name__)
+
+
+@users_blueprint.route("/register", methods=["POST"])
+def register():
+    data = request.get_json()
+    response, status_code = user_controller.register_user_logic(data)
+    return jsonify(response), status_code
+
+
+@users_blueprint.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    response, status_code = user_controller.login_user_logic(data)
+    return jsonify(response), status_code
+
+================
+File: api/vacations/__init__.py
+================
+# api\vacations\__init__.py
+# This file makes the directory a Python package.
+
+================
+File: api/vacations/model.py
+================
+# api\vacations\model.py
+from project.db import get_db
+
+
+def get_all_vacations_sorted():
+    db = get_db()
+    vacations = db.execute("SELECT * FROM vacations ORDER BY start_date ASC").fetchall()
+    return [dict(row) for row in vacations]
+
+
+def add_vacation(country_id, description, start_date, end_date, price, image_file_name):
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute(
+        "INSERT INTO vacations (country_id, description, start_date, end_date, price, image_file_name) VALUES (?, ?, ?, ?, ?, ?)",
+        (country_id, description, start_date, end_date, price, image_file_name),
+    )
+    vacation_id = cursor.lastrowid
+    db.commit()
+    new_vacation = db.execute(
+        "SELECT * FROM vacations WHERE vacation_id = ?", (vacation_id,)
+    ).fetchone()
+    return dict(new_vacation)
+
+
+def update_vacation(
+    vacation_id, country_id, description, start_date, end_date, price, image_file_name
+):
+    db = get_db()
+    if image_file_name:
+        db.execute(
+            "UPDATE vacations SET country_id = ?, description = ?, start_date = ?, end_date = ?, price = ?, image_file_name = ? WHERE vacation_id = ?",
+            (
+                country_id,
+                description,
+                start_date,
+                end_date,
+                price,
+                image_file_name,
+                vacation_id,
+            ),
+        )
+    else:
+        db.execute(
+            "UPDATE vacations SET country_id = ?, description = ?, start_date = ?, end_date = ?, price = ? WHERE vacation_id = ?",
+            (country_id, description, start_date, end_date, price, vacation_id),
+        )
+    db.commit()
+    updated_vacation = db.execute(
+        "SELECT * FROM vacations WHERE vacation_id = ?", (vacation_id,)
+    ).fetchone()
+    return dict(updated_vacation)
+
+
+def delete_vacation(vacation_id):
+    db = get_db()
+    result = db.execute("DELETE FROM vacations WHERE vacation_id = ?", (vacation_id,))
+    db.commit()
+    return result.rowcount > 0
+
+
+def get_vacation_by_id(vacation_id):
+    db = get_db()
+    vacation = db.execute(
+        "SELECT * FROM vacations WHERE vacation_id = ?", (vacation_id,)
+    ).fetchone()
+    return dict(vacation) if vacation else None
+
+================
+File: api/vacations/routes.py
+================
+# api\vacations\routes.py
+from flask import Blueprint, request, jsonify
+from api.vacations import controller as vacation_controller
+from api.vacations import model as vacation_model
+
+vacations_blueprint = Blueprint("vacations", __name__)
+
+
+@vacations_blueprint.route("/", methods=["GET"])
+def get_all_vacations():
+    vacations = vacation_model.get_all_vacations_sorted()
+    return jsonify(vacations), 200
+
+
+@vacations_blueprint.route("/", methods=["POST"])
+def add_vacation():
+    data = request.get_json()
+    response, status_code = vacation_controller.add_vacation_logic(data)
+    return jsonify(response), status_code
+
+
+@vacations_blueprint.route("/<int:vacation_id>", methods=["PUT"])
+def update_vacation(vacation_id):
+    data = request.get_json()
+    response, status_code = vacation_controller.update_vacation_logic(vacation_id, data)
+    return jsonify(response), status_code
+
+
+@vacations_blueprint.route("/<int:vacation_id>", methods=["DELETE"])
+def delete_vacation(vacation_id):
+    response, status_code = vacation_controller.delete_vacation_logic(vacation_id)
+    return jsonify(response), status_code
+
+@vacations_blueprint.route("/<int:vacation_id>", methods=["GET"])
+def get_vacation_by_id(vacation_id):
+    vacation = vacation_model.get_vacation_by_id(vacation_id)
+    if vacation:
+        return jsonify(vacation), 200
+    else:
+        return jsonify({"error": "Vacation not found."}), 404
+
+================
+File: tests/generate_postman_collection.py
+================
+import json
+import uuid
+from urllib.parse import urlparse
+
+
+# --- Helper function for Postman URL structure ---
+def parse_url_components(original_url):
+    """
+    Parses a URL into Postman's required URL structure.
+    This version correctly identifies and defines Postman path variables (e.g., {{variable}}).
+    """
+    BASE_URL_TO_REPLACE = "http://127.0.0.1:5001"
+    postman_raw_url = original_url.replace(BASE_URL_TO_REPLACE, "{{baseURL}}")
+
+    try:
+        parsed = urlparse(original_url)
+
+        path_segments = [p for p in parsed.path.split("/") if p]
+
+        postman_path = []
+        postman_variables = []
+        for segment in path_segments:
+            if segment.startswith("{{") and segment.endswith("}}"):
+                var_name = segment[2:-2]
+                postman_path.append(f":{var_name}")
+                postman_variables.append(
+                    {
+                        "key": var_name,
+                        "value": segment,
+                        "description": f"Variable for the '{var_name}' path segment.",
+                    }
+                )
+            else:
+                postman_path.append(segment)
+
+        url_object = {
+            "raw": postman_raw_url,
+            "protocol": parsed.scheme,
+            "host": parsed.hostname.split("."),
+            "port": str(parsed.port),
+            "path": postman_path,
+        }
+
+        if postman_variables:
+            url_object["variable"] = postman_variables
+
+        return url_object
+
+    except Exception as e:
+        print(f"Error parsing URL '{original_url}': {e}")
+        return {"raw": postman_raw_url, "host": [], "path": []}
+
+
+def create_postman_request(
+    name,
+    method,
+    url,
+    headers=None,
+    body=None,
+    body_mode="raw",
+    description="",
+    test_script="",
+):
+    """Creates a dictionary representing a single Postman request item."""
+    item = {
+        "name": name,
+        "request": {
+            "method": method,
+            "header": [],
+            "url": parse_url_components(url),
+            "description": description,
+        },
+        "response": [],
+    }
+    if headers:
+        for key, value in headers.items():
+            item["request"]["header"].append({"key": key, "value": value})
+    if body is not None:
+        item["request"]["body"] = {
+            "mode": body_mode,
+            "raw": (
+                json.dumps(body, indent=4)
+                if isinstance(body, dict) and body_mode == "raw"
+                else str(body)
+            ),
+        }
+        if body_mode == "raw" and isinstance(body, dict):
+            if not any(
+                h["key"].lower() == "content-type" for h in item["request"]["header"]
+            ):
+                item["request"]["header"].append(
+                    {"key": "Content-Type", "value": "application/json"}
+                )
+    if test_script:
+        item["event"] = [
+            {
+                "listen": "test",
+                "script": {"type": "text/javascript", "exec": test_script.splitlines()},
+            }
+        ]
+    return item
+
+
+def create_postman_folder(name, description, items):
+    """Creates a dictionary representing a Postman folder."""
+    return {"name": name, "description": description, "item": items}
+
+
+def generate_postman_collection(collection_name, items_list, description=""):
+    """Generates the full Postman Collection JSON structure."""
+    collection = {
+        "info": {
+            "_postman_id": str(uuid.uuid4()),
+            "name": collection_name,
+            "description": description,
+            "schema": "https://schema.postman.com/json/collection/v2.1.0/collection.json",
+        },
+        "item": items_list,
+        "variable": [
+            {
+                "key": "baseURL",
+                "value": "http://127.0.0.1:5001",
+                "type": "string",
+                "description": "The base URL for your API server.",
+            },
+            {
+                "key": "vacation_id",
+                "value": "1",
+                "type": "string",
+                "description": "An example ID for a vacation. Can be updated by tests.",
+            },
+            {
+                "key": "user_id",
+                "value": "2",
+                "type": "string",
+                "description": "An example ID for a user. Default is a regular user.",
+            },
+        ],
+    }
+    return collection
+
+
+# --- Main Script to Define and Generate the Postman Collection ---
+def create_vacations_api_collection():
+    """Constructs the Postman collection for the Vacations API."""
+    BASE_URL = "http://127.0.0.1:5001"
+    collection_folders = []
+
+    # --- 1. Authentication Endpoints ---
+    auth_requests = [
+        create_postman_request(
+            name="1. Register a User",
+            method="POST",
+            url=f"{BASE_URL}/api/auth/register",
+            body={
+                "first_name": "Test",
+                "last_name": "User",
+                "email": "user@example.com",
+                "password": "password123",
+            },
+            description="Create a new user account.",
+        ),
+        create_postman_request(
+            name="2. Login User",
+            method="POST",
+            url=f"{BASE_URL}/api/auth/login",
+            body={"email": "user@example.com", "password": "password123"},
+            description="Authenticate a user and receive a token.",
+        ),
+    ]
+    collection_folders.append(
+        create_postman_folder(
+            "Authentication",
+            "Endpoints for user registration and login.",
+            auth_requests,
+        )
+    )
+
+    # --- 2. Vacation Management Endpoints ---
+    vacation_requests = [
+        create_postman_request(
+            name="3. Get All Vacations",
+            method="GET",
+            url=f"{BASE_URL}/api/vacations",
+            description="Retrieve a list of all vacation entries.",
+        ),
+        create_postman_request(
+            name="4. Get Vacation by ID",
+            method="GET",
+            url=f"{BASE_URL}/api/vacations/{{vacation_id}}",
+            description="Retrieve details for a single vacation using its ID.",
+        ),
+        create_postman_request(
+            name="5. Add New Vacation (Admin)",
+            method="POST",
+            url=f"{BASE_URL}/api/vacations",
+            body={
+                "country_id": 1,
+                "description": "A beautiful trip to the mountains.",
+                "start_date": "2025-10-01",
+                "end_date": "2025-10-10",
+                "price": 1999.99,
+                "image_file_name": "mountains.jpg",
+            },
+            description="Create a new vacation entry. (Requires Admin privileges)",
+            test_script="""
+                if (pm.response.code === 201) {
+                    var jsonData = pm.response.json();
+                    if (jsonData && jsonData.vacation_id) {
+                        pm.collectionVariables.set("vacation_id", jsonData.vacation_id);
+                    }
+                }
+            """,
+        ),
+        create_postman_request(
+            name="6. Update Existing Vacation (Admin)",
+            method="PUT",
+            url=f"{BASE_URL}/api/vacations/{{vacation_id}}",
+            body={
+                "country_id": 1,
+                "description": "UPDATED: An even more beautiful trip to the mountains.",
+                "start_date": "2025-10-01",
+                "end_date": "2025-10-12",
+                "price": 2150.00,
+                "image_file_name": "mountains_updated.jpg",
+            },
+            description="Modify an existing vacation entry. (Requires Admin privileges)",
+        ),
+        create_postman_request(
+            name="7. Delete Vacation (Admin)",
+            method="DELETE",
+            url=f"{BASE_URL}/api/vacations/{{vacation_id}}",
+            description="Remove a vacation entry. (Requires Admin privileges)",
+        ),
+    ]
+    collection_folders.append(
+        create_postman_folder(
+            "Vacation Management",
+            "Endpoints for CRUD operations on vacations.",
+            vacation_requests,
+        )
+    )
+
+    # --- 3. Like Functionality Endpoints ---
+    like_requests = [
+        create_postman_request(
+            name="8. Like a Vacation",
+            method="POST",
+            url=f"{BASE_URL}/api/likes",
+            body={
+                "user_id": "{{user_id}}",
+                "vacation_id": "{{vacation_id}}",
+            },
+            description="Record a user's 'like' for a specific vacation.",
+        ),
+        create_postman_request(
+            name="9. Unlike a Vacation",
+            method="DELETE",
+            url=f"{BASE_URL}/api/likes",
+            body={
+                "user_id": "{{user_id}}",
+                "vacation_id": "{{vacation_id}}",
+            },
+            description="Remove a user's 'like' from a specific vacation.",
+        ),
+        create_postman_request(
+            name="10. Get Liked Vacations by User",
+            method="GET",
+            url=f"{BASE_URL}/api/likes/{{user_id}}",
+            description="Retrieve all vacations liked by a specific user.",
+        ),
+        create_postman_request(
+            name="11. Get Likes Report (Admin)",
+            method="GET",
+            url=f"{BASE_URL}/api/likes/report",
+            description="Retrieve a report of all liked vacations and their like counts. (Admin-only)",
+        ),
+    ]
+    collection_folders.append(
+        create_postman_folder(
+            "Like Functionality",
+            "Endpoints for users to like, unlike, and view liked vacations.",
+            like_requests,
+        )
+    )
+
+    return generate_postman_collection(
+        collection_name="Vacations Project API",
+        items_list=collection_folders,
+        description="The complete API collection for the Vacations project.",
+    )
+
+
+if __name__ == "__main__":
+    postman_collection = create_vacations_api_collection()
+    output_filename = "vacations_api_collection.json"
+    with open(output_filename, "w") as f:
+        json.dump(postman_collection, f, indent=4)
+    print(f"✅ Postman collection '{output_filename}' generated successfully!")
+    print("\n--- Next Steps ---")
+    print(f"Import the '{output_filename}' file into Postman to test your API.")
+
+================
+File: api/vacations/controller.py
+================
+# api\vacations\controller.py
+from datetime import datetime
+from api.vacations import model as vacation_model
+
+
+def add_vacation_logic(data):
+    required_fields = [
+        "country_id",
+        "description",
+        "start_date",
+        "end_date",
+        "price",
+        "image_file_name",
+    ]
+    if not all(field in data for field in required_fields):
+        return {"error": "Missing one or more required fields."}, 400
+
+    try:
+        price = float(data["price"])
+        start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+        end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return {"error": "Invalid price or date format. Use YYYY-MM-DD for dates."}, 400
+
+    if not (0 < price <= 10000):
+        return {"error": "Price must be between 0 and 10,000."}, 400
+    if end_date < start_date:
+        return {"error": "End date cannot be before start date."}, 400
+    if start_date < datetime.now().date():
+        return {"error": "Cannot add a vacation with a start date in the past."}, 400
+
+    new_vacation = vacation_model.add_vacation(**data)
+    return new_vacation, 201
+
+
+def update_vacation_logic(vacation_id, data):
+    if not vacation_model.get_vacation_by_id(vacation_id):
+        return {"error": "Vacation not found."}, 404
+
+    required_fields = ["country_id", "description", "start_date", "end_date", "price"]
+    if not all(field in data for field in required_fields):
+        return {"error": "Missing one or more required fields."}, 400
+
+    try:
+        price = float(data["price"])
+        start_date = datetime.strptime(data["start_date"], "%Y-%m-%d").date()
+        end_date = datetime.strptime(data["end_date"], "%Y-%m-%d").date()
+    except (ValueError, TypeError):
+        return {"error": "Invalid price or date format."}, 400
+
+    if not (0 < price <= 10000):
+        return {"error": "Price must be between 0 and 10,000."}, 400
+    if end_date < start_date:
+        return {"error": "End date cannot be before start date."}, 400
+
+    image_file_name = data.get("image_file_name")
+    updated_vacation = vacation_model.update_vacation(
+        vacation_id,
+        data["country_id"],
+        data["description"],
+        data["start_date"],
+        data["end_date"],
+        price,
+        image_file_name,
+    )
+    return updated_vacation, 200
+
+
+def delete_vacation_logic(vacation_id):
+    if vacation_model.delete_vacation(vacation_id):
+        # CHANGE: Use 200 OK instead of 204 No Content.
+        return {"message": "Vacation deleted successfully."}, 200
+    else:
+        return {"error": "Vacation not found."}, 404
+
+================
+File: api/likes/model.py
+================
+# api/likes/model.py
+import sqlite3
+from project.db import get_db
+
+
+def add_like(user_id, vacation_id):
+    try:
+        db = get_db()
+        db.execute(
+            "INSERT INTO likes (user_id, vacation_id) VALUES (?, ?)",
+            (user_id, vacation_id),
+        )
+        db.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def delete_like(user_id, vacation_id):
+    db = get_db()
+    result = db.execute(
+        "DELETE FROM likes WHERE user_id = ? AND vacation_id = ?",
+        (user_id, vacation_id),
+    )
+    db.commit()
+    return result.rowcount > 0
+
+
+def get_liked_vacations_by_user(user_id):
+    db = get_db()
+    liked_vacations = db.execute(
+        """
+        SELECT v.*
+        FROM vacations v
+        INNER JOIN likes l ON v.vacation_id = l.vacation_id
+        WHERE l.user_id = ?
+        ORDER BY v.start_date ASC
+        """,
+        (user_id,),
+    ).fetchall()
+    return [dict(row) for row in liked_vacations]
+
+
+def get_all_liked_vacations_report():
+    db = get_db()
+    report = db.execute(
+        """
+        SELECT
+            v.vacation_id,
+            v.description,
+            c.country_name,
+            COUNT(l.user_id) as like_count
+        FROM vacations v
+        JOIN likes l ON v.vacation_id = l.vacation_id
+        JOIN countries c ON v.country_id = c.country_id
+        GROUP BY v.vacation_id
+        ORDER BY like_count DESC
+        """
+    ).fetchall()
+    return [dict(row) for row in report]
+
+================
+File: api/likes/routes.py
+================
+# api/likes/routes.py
+from flask import Blueprint, request, jsonify
+from api.likes import controller as like_controller
+
+likes_blueprint = Blueprint("likes", __name__)
+
+
+@likes_blueprint.route("/", methods=["POST"])
+def add_like():
+    data = request.get_json()
+    response, status_code = like_controller.add_like_logic(data)
+    return jsonify(response), status_code
+
+
+@likes_blueprint.route("/", methods=["DELETE"])
+def delete_like():
+    data = request.get_json()
+    response, status_code = like_controller.delete_like_logic(data)
+    return jsonify(response), status_code
+
+
+@likes_blueprint.route("/report", methods=["GET"])
+def get_all_liked_vacations_report():
+    response, status_code = like_controller.get_all_liked_vacations_report_logic()
+    return jsonify(response), status_code
+
+
+@likes_blueprint.route("/<int:user_id>", methods=["GET"])
+def get_liked_vacations(user_id):
+    response, status_code = like_controller.get_liked_vacations_logic(user_id)
+    return jsonify(response), status_code
+
+================
+File: api/likes/controller.py
+================
+# api/likes/controller.py
+from api.likes import model as like_model
+
+
+def add_like_logic(data):
+    user_id = data.get("user_id")
+    vacation_id = data.get("vacation_id")
+    if not all([user_id, vacation_id]):
+        return {"error": "user_id and vacation_id are required."}, 400
+
+    if like_model.add_like(user_id, vacation_id):
+        return {"message": "Like added successfully."}, 201
+    else:
+        return {
+            "error": "Failed to add like. It may already exist or user/vacation is invalid."
+        }, 409
+
+
+def delete_like_logic(data):
+    user_id = data.get("user_id")
+    vacation_id = data.get("vacation_id")
+    if not all([user_id, vacation_id]):
+        return {"error": "user_id and vacation_id are required."}, 400
+
+    if like_model.delete_like(user_id, vacation_id):
+        # CHANGE: Use 200 OK instead of 204 No Content to allow a response body.
+        return {"message": "Like removed successfully."}, 200
+    else:
+        return {"error": "Like not found."}, 404
+
+
+def get_liked_vacations_logic(user_id):
+    liked_vacations = like_model.get_liked_vacations_by_user(user_id)
+    return liked_vacations, 200
+
+
+def get_all_liked_vacations_report_logic():
+    report = like_model.get_all_liked_vacations_report()
+    return report, 200
+
+
+
+
+================================================================
+End of Codebase
+================================================================

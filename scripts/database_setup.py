@@ -134,6 +134,17 @@ cursor.executemany(
     vacations,
 )
 
+# --- NEW: Insert sample likes ---
+likes = [
+    (2, 1),  # User with ID 2 likes vacation with ID 1
+    (2, 3),  # User with ID 2 likes vacation with ID 3
+    (3, 1),  # User with ID 3 likes vacation with ID 1
+    (3, 5),  # User with ID 3 likes vacation with ID 5
+    (3, 7),  # User with ID 3 likes vacation with ID 7
+]
+cursor.executemany("INSERT INTO likes (user_id, vacation_id) VALUES (?, ?)", likes)
+print(f"{len(likes)} sample likes inserted.")
+
 # Commit the changes and close the connection
 conn.commit()
 conn.close()
